@@ -1,6 +1,7 @@
 # Celery utils
 This script is meant to help reload celery tasks to pick up the changes.
 Currently it is in experimental mode.
+
 ## Usage
 Each CLI option represents one action. The actions will be performed in the same order as the options are present (so the order of the options matters)
 
@@ -16,4 +17,6 @@ Each CLI option represents one action. The actions will be performed in the same
     -W QUEUE_NAMES: Stop queue workers
     -a: Shortcut for -m -S -q all -s
 
-```restart.sh -a``` is the option that is the most likely to work, but it still requires more testing for different cases.
+## Examples
+ - ```celeryutils/restart.sh -W celery_email -q email -w celery_email``` - purge email queue and restart corresponding workers
+ - ```celeryutils/restart.sh -q all``` - purge all queues
