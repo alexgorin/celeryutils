@@ -2,12 +2,6 @@
 # Utility that allows to quickly apply changes to celery workers
 # Author: Alex Gorin, alex.gorin@tophatmonocle.com
 
-QUEUES_TO_PURGE=
-CHECK_CELERY_MONITORING=
-RESTART_APP=
-RESTART_ALL=
-RELOAD_CELERY_WORKERS=
-
 function show_help() {
 	cat << EOF
 Applies changes made to Celery tasks.
@@ -80,7 +74,7 @@ function stop_all() {
 }
 
 OPTIND=1 # Variable used by getopts. Don't touch.
-while getopts "marchRqsS:" opt; do
+while getopts "marchRq:sS" opt; do
 	case "$opt" in
 	h)
 		show_help
