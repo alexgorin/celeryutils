@@ -11,9 +11,9 @@ Each CLI option represents one action. The actions will be performed in the same
     -r: Restart the application ('re')
     -R: Restart all ('rere')
     -s: Start all
-    -s: Stop all
+    -S: Stop all
     -w QUEUE_NAMES: Start queue workers
     -W QUEUE_NAMES: Stop queue workers
-    -a: Shortcut for -m -W all -q all -w all
+    -a: Shortcut for -m -S -q all -s
 
 ```restart.sh -a``` is the option that is the most likely to work, but it still requires more testing for different cases.

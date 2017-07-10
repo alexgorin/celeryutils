@@ -13,10 +13,10 @@ Arguments:
 	-r: Restart the application ('re')
 	-R: Restart all ('rere')
 	-s: Start all
-	-s: Stop all
+	-S: Stop all
 	-w QUEUE_NAMES: Start queue workers
-	-w QUEUE_NAMES: Stop queue workers
-	-a: Shortcut for -m -W all -q all -w all
+	-W QUEUE_NAMES: Stop queue workers
+	-a: Shortcut for -m -S -q all -s
 EOF
 }
 
@@ -134,9 +134,9 @@ while getopts "marchRq:w:W:sS" opt; do
 		;;
 	a)
 		check_celery_events_monitoring
-		stop_queue_workers all
+		stop_all
 		purge_queues all
-		start_queue_workers all
+		start_all
 		;;
 	\?)
 		echo "Invalid option: -$OPTARG" >&2
