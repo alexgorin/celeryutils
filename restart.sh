@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 # Utility that allows to quickly apply changes to celery workers
 # Author: Alex Gorin, alex.gorin@tophatmonocle.com
-
+MANAGE_PY=${MANAGE_PY:-/vagrant/manage.py}
 function show_help() {
 	cat << EOF
 Applies changes made to Celery tasks.
@@ -14,7 +14,9 @@ Arguments:
 	-R: Restart all ('rere')
 	-s: Start all
 	-s: Stop all
-	-a: Shortcut for -m -q all
+	-w QUEUE_NAMES: Start queue workers
+	-w QUEUE_NAMES: Stop queue workers
+	-a: Shortcut for -m -W all -q all -w all
 EOF
 }
 
@@ -30,19 +32,17 @@ function queues_list() {
 function purge_queues() {
 	QUEUES_TO_PURGE=$1
 	if [ -n "$QUEUES_TO_PURGE" ]; then
-		stop_all
 		if [ "$QUEUES_TO_PURGE" == "all" ]; then
-			# Alternative - ./manage.py celery amqp queue.purge {}
-			queues_list | xargs -I {} sudo rabbitmqctl purge_queue {}
+			# Alternative - sudo rabbitmqctl purge_queue {}
+			queues_list | xargs -I {} $MANAGE_PY celery amqp queue.purge {}
 		else
-			items $QUEUES_TO_PURGE | xargs -I {} sudo rabbitmqctl purge_queue {}
+			items $QUEUES_TO_PURGE | xargs -I {} $MANAGE_PY celery amqp queue.purge {}
 		fi
-		start_all
 	fi
 }
 
 function check_celery_events_monitoring() {
-	if ps aux | grep "manage.py\ celery\ events"; then
+	if ps aux | grep "manage.py\ celery\ events" >/dev/null 2>&1; then
 		echo "Celery tasks monitoring is running"
 	else
 		echo "Celery tasks monitoring is not running. Try running './manage.py celery events' in a separate tab."
@@ -50,6 +50,7 @@ function check_celery_events_monitoring() {
 }
 
 function reload_celery_workers() {
+	echo "Sending HUP to Celery workers"
 	ps auxww | grep 'celery worker' | awk '{print $2}' | xargs kill -HUP
 }
 
@@ -73,8 +74,32 @@ function stop_all() {
 	sudo supervisorctl stop all
 }
 
+function stop_queue_workers() {
+	QUEUES=$1
+	if [ -n "$QUEUES" ]; then
+		if [ "$QUEUES" == "all" ]; then
+			# Alternative - ./manage.py celery amqp queue.purge {}
+			sudo supervisorctl stop worker:
+		else
+			items $QUEUES | xargs -I {} sudo supervisorctl stop worker:{}
+		fi
+	fi
+}
+
+function start_queue_workers() {
+	QUEUES=$1
+	if [ -n "$QUEUES" ]; then
+		if [ "$QUEUES" == "all" ]; then
+			# Alternative - ./manage.py celery amqp queue.purge {}
+			sudo supervisorctl start worker:
+		else
+			items $QUEUES | xargs -I {} sudo supervisorctl start worker:{}
+		fi
+	fi
+}
+
 OPTIND=1 # Variable used by getopts. Don't touch.
-while getopts "marchRq:sS" opt; do
+while getopts "marchRq:w:W:sS" opt; do
 	case "$opt" in
 	h)
 		show_help
@@ -82,6 +107,12 @@ while getopts "marchRq:sS" opt; do
 		;;
 	q)
 		purge_queues $OPTARG
+		;;
+	W)
+		stop_queue_workers $OPTARG
+		;;
+	w)
+		start_queue_workers $OPTARG
 		;;
 	m)
 		check_celery_events_monitoring
@@ -103,7 +134,9 @@ while getopts "marchRq:sS" opt; do
 		;;
 	a)
 		check_celery_events_monitoring
+		stop_queue_workers all
 		purge_queues all
+		start_queue_workers all
 		;;
 	\?)
 		echo "Invalid option: -$OPTARG" >&2
